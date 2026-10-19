@@ -13,6 +13,7 @@
 - Experience: backed by 30 years of fire protection industry experience
 - Insurance: fully insured
 - Google reviews: 76 reviews, 5.0 average (as of October 2026)
+- Serves both commercial and residential properties
 - Customers: mostly commercial (general contractors, property managers, facility managers, restaurant owners, building owners), plus homeowners
 
 ## Services
@@ -28,6 +29,7 @@
 ## Pages
 
 - [Home](https://intrinityfire.com/): overview of services, who we serve, service area, and reviews
+- [Services](https://intrinityfire.com/services): every service, with commercial and residential coverage explained
 - [Fire Sprinklers](https://intrinityfire.com/fire-sprinklers): sprinkler inspection, repair, and installation, what an inspection covers, sprinkler FAQ
 - [Contact](https://intrinityfire.com/contact): request a quote, inspection, repair, or emergency service; general FAQ
 - [Careers](https://intrinityfire.com/careers): job application for technician, apprentice, and office roles in all four cities

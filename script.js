@@ -7,7 +7,7 @@
   /* ---------- Active nav ---------- */
   var page = document.body.getAttribute('data-page');
   document.querySelectorAll('.nav-links a[data-nav]').forEach(function (a) {
-    if (a.getAttribute('data-nav') === page) {
+    if (a.getAttribute('data-nav').split(' ').indexOf(page) !== -1) {
       a.classList.add('is-active');
       a.setAttribute('aria-current', 'page');
     }

@@ -738,3 +738,13 @@ body[data-page="thank-you"] .page-hero, body[data-page="404"] .page-hero { flex:
 }
 .form-banner.is-info { background: rgba(255, 213, 0, 0.16); border-color: #c9a400; }
 
+
+/* Commercial / residential callout under the homepage services */
+.property-types { margin-top: 26px; }
+.property-type { flex-direction: row; align-items: flex-start; gap: 20px; }
+.property-type .tile-icon { flex: none; margin-bottom: 0; }
+.property-type h3 { margin-bottom: 6px; }
+.page-hero--services { background-image: url('assets/hero-services.jpg'); }
+.card-body .check-list { margin: 4px 0 24px; gap: 8px; }
+.card-body .check-list li { font-size: .98rem; }
+.tile .check-list { margin-bottom: 0; }
