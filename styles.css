@@ -737,3 +737,8 @@ body[data-page="thank-you"] .page-hero, body[data-page="404"] .page-hero { flex:
   color: var(--text);
 }
 .form-banner.is-info { background: rgba(255, 213, 0, 0.16); border-color: #c9a400; }
+
+/* Homepage services: 3 priority cards, then 4 secondary cards (balanced at every breakpoint) */
+.services-more { margin-top: 26px; }
+.services-more .card-body { padding: 24px 22px 26px; }
+.services-more .card-body h3 { font-size: 1.5rem; }
