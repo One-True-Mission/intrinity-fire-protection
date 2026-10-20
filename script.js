@@ -240,7 +240,8 @@
 
       // Demo guard: the client's Formspree form does not exist yet.
       if (form.action.indexOf('FORM_ID_PENDING') !== -1) {
-        showBanner('info', 'Demo preview: this form is not connected yet, so nothing was sent. Validation passed, and once the Formspree form is set up this will deliver straight to Intrinity’s inbox.');
+        var demoNext = form.getAttribute('data-redirect');
+        showBanner('info', 'Demo preview: this form is not connected yet, so nothing was sent. Validation passed, and once the Formspree form is set up this will deliver straight to Intrinity’s inbox.' + (demoNext ? ' <a href="' + demoNext + '">See the page applicants land on next.</a>' : ''));
         return;
       }
 
@@ -251,11 +252,30 @@
         headers: { 'Accept': 'application/json' }
       }).then(function (res) {
         if (!res.ok) throw new Error('bad-response');
-        window.location.href = new URL('thank-you.html', window.location.href).href;
+        var next = form.getAttribute('data-redirect') || 'thank-you.html';
+        if (next.indexOf('application') !== -1) {
+          try {
+            var fn = form.querySelector('[name="first_name"]'), ln = form.querySelector('[name="last_name"]'), loc = form.querySelector('[name="location"]');
+            sessionStorage.setItem('ifp_applicant', JSON.stringify({ name: ((fn ? fn.value : '') + ' ' + (ln ? ln.value : '')).trim(), city: loc ? loc.value : '' }));
+          } catch (err) {}
+        }
+        window.location.href = new URL(next, window.location.href).href;
       }).catch(function () {
         if (submit) { submit.disabled = false; submit.innerHTML = submitLabel; }
         showBanner('error', 'Something went wrong and your message did not send. Please try again, or call us at <a href="tel:+12546134231">(254) 613-4231</a>.');
       });
     });
   });
+
+  /* ---------- Resume email link on the application thank-you page ---------- */
+  (function () {
+    var links = document.querySelectorAll('[data-resume-mailto]');
+    if (!links.length) return;
+    var who = null;
+    try { who = JSON.parse(sessionStorage.getItem('ifp_applicant') || 'null'); } catch (err) {}
+    var subject = 'Job application';
+    if (who && who.name) subject += ': ' + who.name + (who.city ? ', ' + who.city : '');
+    var href = 'mailto:info@intrinityfire.com?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent('Resume attached.');
+    links.forEach(function (a) { a.setAttribute('href', href); });
+  })();
 })();
