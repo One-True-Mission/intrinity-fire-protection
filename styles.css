@@ -339,6 +339,9 @@ main > .marquee + .section, .page-hero + .section { padding-top: 88px; }
   font-size: .78rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
   color: var(--text); border: 1px solid var(--line-strong); border-radius: 30px; padding: 4px 11px;
 }
+.section-tags { margin: 6px 0 18px; }
+.section-tags li { font-size: .85rem; padding: 7px 16px; background: var(--accent); border: 1px solid var(--accent); color: var(--black); cursor: default; }
+@media (max-width: 560px) { .section-tags { gap: 6px; } .section-tags li { font-size: .74rem; padding: 6px 10px; letter-spacing: .05em; } }
 
 .tile { padding: 30px; }
 .tile-icon {
@@ -754,3 +757,10 @@ body[data-page="thank-you"] .page-hero, body[data-page="404"] .page-hero { flex:
 .card-body .check-list { margin: 4px 0 24px; gap: 8px; }
 .card-body .check-list li { font-size: .98rem; }
 .tile .check-list { margin-bottom: 0; }
+
+/* ---------- Careers: resume by email ---------- */
+.resume-note {
+  border: 1px solid var(--accent); border-left-width: 4px; border-radius: var(--radius-sm);
+  padding: 14px 18px; background: rgba(255, 109, 0, 0.08); line-height: 1.55;
+}
+.hero-fine { margin-top: 22px; font-size: .95rem; opacity: .85; }
