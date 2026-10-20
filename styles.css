@@ -308,6 +308,12 @@ main > .marquee + .section, .page-hero + .section { padding-top: 88px; }
 .grid-2 { grid-template-columns: repeat(2, 1fr); }
 .grid-3 { grid-template-columns: repeat(3, 1fr); }
 .grid-4 { grid-template-columns: repeat(4, 1fr); }
+.services-grid .card-body { padding: 24px 22px 26px; }
+.services-grid .card-body h3 { font-size: 1.5rem; }
+.grid-center { display: flex; flex-wrap: wrap; justify-content: center; gap: 26px; }
+.grid-center > .card { flex: 0 1 calc((100% - 52px) / 3); }
+@media (max-width: 900px) { .grid-center > .card { flex-basis: calc((100% - 26px) / 2); } }
+@media (max-width: 560px) { .grid-center > .card { flex-basis: 100%; } }
 
 /* ---------- Sub-cards ---------- */
 .card {
