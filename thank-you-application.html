@@ -1,281 +1,125 @@
-/* Intrinity Fire Protection LLC. OTM Web Design. */
-(function () {
-  'use strict';
-
-  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  /* ---------- Active nav ---------- */
-  var page = document.body.getAttribute('data-page');
-  document.querySelectorAll('.nav-links a[data-nav]').forEach(function (a) {
-    if (a.getAttribute('data-nav').split(' ').indexOf(page) !== -1) {
-      a.classList.add('is-active');
-      a.setAttribute('aria-current', 'page');
-    }
-  });
-
-  /* ---------- Mobile drawer ---------- */
-  var toggle = document.querySelector('.nav-toggle');
-  var links = document.querySelector('.nav-links');
-  function closeNav() {
-    if (!toggle) return;
-    toggle.setAttribute('aria-expanded', 'false');
-    toggle.setAttribute('aria-label', 'Open menu');
-    links.classList.remove('is-open');
-  }
-  if (toggle && links) {
-    toggle.addEventListener('click', function () {
-      var open = toggle.getAttribute('aria-expanded') === 'true';
-      toggle.setAttribute('aria-expanded', String(!open));
-      toggle.setAttribute('aria-label', open ? 'Open menu' : 'Close menu');
-      links.classList.toggle('is-open', !open);
-    });
-    links.addEventListener('click', function (e) { if (e.target.closest('a')) closeNav(); });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeNav(); });
-    window.addEventListener('resize', function () { if (window.innerWidth > 900) closeNav(); }, { passive: true });
-  }
-
-  /* ---------- Scroll reveal ---------- */
-  var reveals = document.querySelectorAll('.reveal');
-  if (reduceMotion || !('IntersectionObserver' in window)) {
-    reveals.forEach(function (el) { el.classList.add('is-visible'); });
-  } else {
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting) { entry.target.classList.add('is-visible'); io.unobserve(entry.target); }
-      });
-    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
-    reveals.forEach(function (el) { io.observe(el); });
-  }
-
-  /* ---------- Carousels (gallery coverflow + reviews) ---------- */
-  document.querySelectorAll('[data-carousel]').forEach(function (root) {
-    var type = root.getAttribute('data-carousel');
-    var slides = Array.prototype.slice.call(root.querySelectorAll('[data-slide]'));
-    var dotsWrap = root.querySelector('.carousel-dots');
-    var track = root.querySelector('.reviews-track');
-    var delay = parseInt(root.getAttribute('data-interval'), 10) || 5000;
-    var count = slides.length;
-    var index = 0;
-    var timer = null;
-    if (!count) return;
-
-    // Dots are built from the slide count so they can never drift out of sync.
-    var dots = slides.map(function (_, i) {
-      var b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'carousel-dot';
-      b.setAttribute('aria-label', 'Show slide ' + (i + 1) + ' of ' + count);
-      b.addEventListener('click', function () { go(i); restart(); });
-      dotsWrap.appendChild(b);
-      return b;
-    });
-
-    function render() {
-      if (type === 'gallery') {
-        slides.forEach(function (s, i) {
-          s.classList.remove('is-active', 'is-prev', 'is-next');
-          var prev = (index - 1 + count) % count;
-          var next = (index + 1) % count;
-          if (i === index) s.classList.add('is-active');
-          else if (i === prev) s.classList.add('is-prev');
-          else if (i === next) s.classList.add('is-next');
-          s.setAttribute('aria-hidden', i === index ? 'false' : 'true');
-        });
-      } else if (track) {
-        track.style.transform = 'translateX(' + (-100 * index) + '%)';
-        slides.forEach(function (s, i) { s.setAttribute('aria-hidden', i === index ? 'false' : 'true'); });
-      }
-      dots.forEach(function (d, i) { d.setAttribute('aria-current', i === index ? 'true' : 'false'); });
-    }
-    function go(i) { index = (i + count) % count; render(); }
-    function start() { if (reduceMotion || timer) return; timer = setInterval(function () { go(index + 1); }, delay); }
-    function stop() { clearInterval(timer); timer = null; }
-    function restart() { stop(); start(); }
-
-    var prevBtn = root.querySelector('[data-prev]');
-    var nextBtn = root.querySelector('[data-next]');
-    if (prevBtn) prevBtn.addEventListener('click', function () { go(index - 1); restart(); });
-    if (nextBtn) nextBtn.addEventListener('click', function () { go(index + 1); restart(); });
-
-    // Clicking a side image in the gallery brings it to center.
-    if (type === 'gallery') {
-      slides.forEach(function (s, i) {
-        s.addEventListener('click', function () { if (i !== index) { go(i); restart(); } });
-      });
-    }
-
-    root.addEventListener('mouseenter', stop);
-    root.addEventListener('mouseleave', start);
-    root.addEventListener('focusin', stop);
-    root.addEventListener('focusout', function (e) { if (!root.contains(e.relatedTarget)) start(); });
-
-    render();
-    start();
-  });
-
-  /* ---------- FAQ accordion ---------- */
-  document.querySelectorAll('.faq-q').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var open = btn.getAttribute('aria-expanded') === 'true';
-      var panel = document.getElementById(btn.getAttribute('aria-controls'));
-      btn.setAttribute('aria-expanded', String(!open));
-      if (panel) panel.classList.toggle('open', !open);
-    });
-  });
-
-  /* ---------- Forms ---------- */
-  var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/;
-  var MAX_FILE = 25 * 1024 * 1024;
-  var FILE_EXT = /\.(pdf|doc|docx)$/i;
-
-  function formatPhone(value) {
-    var d = value.replace(/\D/g, '').slice(0, 10);
-    if (d.length > 6) return '(' + d.slice(0, 3) + ') ' + d.slice(3, 6) + '-' + d.slice(6);
-    if (d.length > 3) return '(' + d.slice(0, 3) + ') ' + d.slice(3);
-    if (d.length > 0) return '(' + d;
-    return '';
-  }
-
-  function fieldWrap(el) { return el.closest('.field'); }
-  function setError(el, msg) {
-    var wrap = fieldWrap(el);
-    if (!wrap) return;
-    wrap.classList.add('has-error');
-    var err = wrap.querySelector('.field-error');
-    if (err) err.textContent = msg;
-  }
-  function clearError(el) {
-    var wrap = fieldWrap(el);
-    if (!wrap) return;
-    wrap.classList.remove('has-error');
-    var err = wrap.querySelector('.field-error');
-    if (err) err.textContent = '';
-  }
-
-  document.querySelectorAll('form[data-validate]').forEach(function (form) {
-    var banner = form.querySelector('.form-banner');
-    var submit = form.querySelector('[type="submit"]');
-    var submitLabel = submit ? submit.innerHTML : '';
-
-    // Phone auto-format
-    form.querySelectorAll('input[type="tel"]').forEach(function (input) {
-      input.addEventListener('input', function () { input.value = formatPhone(input.value); });
-    });
-
-    // Clear a field's error the moment it changes
-    form.addEventListener('input', function (e) { if (e.target.name) clearError(e.target); });
-    form.addEventListener('change', function (e) { if (e.target.name) clearError(e.target); });
-
-    // Resume attach button
-    var fileInput = form.querySelector('.file-input');
-    if (fileInput) {
-      var nameOut = form.querySelector('.file-name');
-      var clearBtn = form.querySelector('.file-clear');
-      var emptyText = nameOut.textContent;
-      var showFile = function () {
-        var f = fileInput.files && fileInput.files[0];
-        nameOut.textContent = f ? f.name : emptyText;
-        nameOut.classList.toggle('has-file', !!f);
-        clearBtn.hidden = !f;
-      };
-      fileInput.addEventListener('change', showFile);
-      clearBtn.addEventListener('click', function () { fileInput.value = ''; showFile(); clearError(fileInput); fileInput.focus(); });
-    }
-
-    // Emergency request callout on the contact form
-    var requestType = form.querySelector('[name="request_type"]');
-    var callout = form.querySelector('.emergency-callout');
-    if (requestType && callout) {
-      requestType.addEventListener('change', function () {
-        callout.classList.toggle('is-visible', requestType.value === 'Emergency');
-      });
-    }
-
-    function validate() {
-      var firstBad = null;
-      function bad(el, msg) { setError(el, msg); if (!firstBad) firstBad = el; }
-
-      form.querySelectorAll('[data-rule]').forEach(function (el) {
-        var rule = el.getAttribute('data-rule');
-        var v = (el.value || '').trim();
-        if (rule === 'name') {
-          if (v.length < 2) bad(el, 'Please enter at least 2 characters.');
-        } else if (rule === 'phone') {
-          if (v.replace(/\D/g, '').length !== 10) bad(el, 'Please enter a 10 digit phone number.');
-        } else if (rule === 'email') {
-          if (!EMAIL_RE.test(v)) bad(el, 'Please enter a valid email address.');
-        } else if (rule === 'select') {
-          if (!v) bad(el, 'Please choose an option.');
-        } else if (rule === 'text') {
-          if (v.length < 2) bad(el, 'Please fill this in.');
-        } else if (rule === 'radio') {
-          var group = form.querySelectorAll('input[name="' + el.getAttribute('data-group') + '"]');
-          var picked = Array.prototype.some.call(group, function (r) { return r.checked; });
-          if (!picked) bad(group[0], 'Please choose one.');
-        } else if (rule === 'file') {
-          var f = el.files && el.files[0];
-          if (f && !FILE_EXT.test(f.name)) bad(el, 'Please attach a PDF or Word document.');
-          else if (f && f.size > MAX_FILE) bad(el, 'That file is over 25 MB. Please attach a smaller file or email it instead.');
-        }
-      });
-
-      if (firstBad) {
-        firstBad.focus({ preventScroll: true });
-        firstBad.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
-        return false;
-      }
-      return true;
-    }
-
-    function showBanner(kind, html) {
-      if (!banner) return;
-      banner.className = 'form-banner is-visible ' + (kind === 'info' ? 'is-info' : 'is-error');
-      banner.innerHTML = html;
-    }
-
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-      if (banner) banner.className = 'form-banner';
-      if (!validate()) return;
-
-      // Demo guard: the client's Formspree form does not exist yet.
-      if (form.action.indexOf('FORM_ID_PENDING') !== -1) {
-        var demoNext = form.getAttribute('data-redirect');
-        showBanner('info', 'Demo preview: this form is not connected yet, so nothing was sent. Validation passed, and once the Formspree form is set up this will deliver straight to Intrinity’s inbox.' + (demoNext ? ' <a href="' + demoNext + '">See the page applicants land on next.</a>' : ''));
-        return;
-      }
-
-      if (submit) { submit.disabled = true; submit.textContent = 'Sending...'; }
-      fetch(form.action, {
-        method: 'POST',
-        body: new FormData(form),
-        headers: { 'Accept': 'application/json' }
-      }).then(function (res) {
-        if (!res.ok) throw new Error('bad-response');
-        var next = form.getAttribute('data-redirect') || 'thank-you.html';
-        if (next.indexOf('application') !== -1) {
-          try {
-            var fn = form.querySelector('[name="first_name"]'), ln = form.querySelector('[name="last_name"]'), loc = form.querySelector('[name="location"]');
-            sessionStorage.setItem('ifp_applicant', JSON.stringify({ name: ((fn ? fn.value : '') + ' ' + (ln ? ln.value : '')).trim(), city: loc ? loc.value : '' }));
-          } catch (err) {}
-        }
-        window.location.href = new URL(next, window.location.href).href;
-      }).catch(function () {
-        if (submit) { submit.disabled = false; submit.innerHTML = submitLabel; }
-        showBanner('error', 'Something went wrong and your message did not send. Please try again, or call us at <a href="tel:+12546134231">(254) 613-4231</a>.');
-      });
-    });
-  });
-
-  /* ---------- Resume email link on the application thank-you page ---------- */
-  (function () {
-    var links = document.querySelectorAll('[data-resume-mailto]');
-    if (!links.length) return;
-    var who = null;
-    try { who = JSON.parse(sessionStorage.getItem('ifp_applicant') || 'null'); } catch (err) {}
-    var subject = 'Job application';
-    if (who && who.name) subject += ': ' + who.name + (who.city ? ', ' + who.city : '');
-    var href = 'mailto:info@intrinityfire.com?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent('Resume attached.');
-    links.forEach(function (a) { a.setAttribute('href', href); });
-  })();
-})();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Application Received | Intrinity Fire Protection</title>
+<meta name="description" content="Your application to Intrinity Fire Protection was received. Email your resume to finish applying.">
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://intrinityfire.com/thank-you-application">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/favicon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Intrinity Fire Protection">
+<meta property="og:title" content="Application Received | Intrinity Fire Protection">
+<meta property="og:description" content="Your application to Intrinity Fire Protection was received. Email your resume to finish applying.">
+<meta property="og:url" content="https://intrinityfire.com/thank-you-application">
+<meta property="og:image" content="https://one-true-mission.github.io/Intrinity-Fire-Protection/assets/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Intrinity Fire Protection LLC">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Application Received | Intrinity Fire Protection">
+<meta name="twitter:description" content="Your application to Intrinity Fire Protection was received. Email your resume to finish applying.">
+<meta name="twitter:image" content="https://one-true-mission.github.io/Intrinity-Fire-Protection/assets/og-image.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<noscript><style>.reveal{opacity:1;transform:none}</style></noscript>
+</head>
+<body data-page="careers">
+<a class="skip-link" href="#main">Skip to main content</a>
+<nav class="site-nav" aria-label="Primary">
+  <div class="nav-inner">
+    <a class="nav-logo" href="index.html" aria-label="Intrinity Fire Protection, home">
+      <img src="assets/logo.png" alt="Intrinity Fire Protection LLC" width="744" height="202">
+    </a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="index.html" data-nav="home">Home</a></li>
+      <li><a href="services.html" data-nav="services fire-sprinklers">Services</a></li>
+      <li><a href="careers.html" data-nav="careers">Careers</a></li>
+      <li><a class="nav-phone" href="tel:+12546134231" aria-label="Call (254) 613-4231"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg><span class="nav-phone-num">(254) 613-4231</span></a></li>
+      <li><a class="nav-cta" href="contact.html">Get a Quote</a></li>
+    </ul>
+  </div>
+</nav>
+<main id="main">
+  <section class="page-hero page-hero--contact" aria-labelledby="page-title">
+    <div class="hero-inner"><div class="hero-content">
+      <span class="eyebrow">Application received</span>
+      <h1 id="page-title">One More Step: Send Your Resume</h1>
+      <p class="lead">We have your application. To finish, email your resume to <a href="mailto:info@intrinityfire.com?subject=Job%20application" data-resume-mailto>info@intrinityfire.com</a> so we can match it to what you just sent. PDF or Word works.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="mailto:info@intrinityfire.com?subject=Job%20application" data-resume-mailto>Email Your Resume</a>
+        <a class="btn btn-ghost" href="careers.html">Back to Careers</a>
+      </div>
+      <p class="hero-fine">No resume handy? No problem. Your application still counts, and we will reach out by phone or email.</p>
+    </div></div>
+  </section>
+</main>
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <img src="assets/logo.png" alt="Intrinity Fire Protection LLC" width="744" height="202" loading="lazy" decoding="async">
+        <p>Fire sprinkler, fire alarm, and backflow service for commercial and residential properties across Texas. Backed by 30 years in fire protection.</p>
+        <p class="footer-24"><span class="dot" aria-hidden="true"></span>24/7 emergency service</p>
+        <p><strong>Fully insured.</strong></p>
+        <!-- LICENSE NUMBERS: pending from client -->
+      </div>
+      <div class="footer-col">
+        <h2>Contact</h2>
+        <ul>
+          <li><a href="tel:+12546134231">(254) 613-4231</a></li>
+          <li><a href="mailto:info@intrinityfire.com">info@intrinityfire.com</a></li>
+          <li><a href="contact.html">Request a Quote</a></li>
+          <li>Based in Austin, TX</li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h2>Services</h2>
+        <ul>
+          <li><a href="services.html#fire-sprinklers">Fire Sprinkler Systems</a></li>
+          <li><a href="services.html#fire-alarms">Fire Alarm Systems</a></li>
+          <li><a href="services.html#backflow">Backflow Testing and Repair</a></li>
+          <li><a href="services.html#kitchen-hoods">Kitchen Hood Systems</a></li>
+          <li><a href="services.html#fire-pumps">Fire Pumps</a></li>
+          <li><a href="services.html#fire-hydrants">Fire Hydrants</a></li>
+          <li><a href="services.html#fire-extinguishers">Fire Extinguishers</a></li>
+          <li><a href="services.html#special-hazard">Special Hazard Systems</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h2>Navigate</h2>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="services.html">Services</a></li>
+          <li><a href="fire-sprinklers.html">Fire Sprinklers</a></li>
+          <li><a href="careers.html">Careers</a></li>
+          <li><a href="contact.html">Contact</a></li>
+          <li><a href="https://www.google.com/search?q=Intrinity+Fire+Protection" target="_blank" rel="noopener">Google Reviews</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 Intrinity Fire Protection LLC. All rights reserved.</p>
+      <ul class="footer-legal">
+        <li><a href="privacy.html">Privacy</a></li>
+        <li><a href="terms.html">Terms</a></li>
+        <li><a href="accessibility.html">Accessibility</a></li>
+      </ul>
+      <div class="social">
+        <!-- GBP: swap the search URL for the Business Profile share link from Orion -->
+        <a href="https://www.google.com/search?q=Intrinity+Fire+Protection" target="_blank" rel="noopener" aria-label="Intrinity Fire Protection on Google"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.35 11.1H12v2.98h5.35c-.23 1.4-1.7 4.1-5.35 4.1a5.9 5.9 0 0 1 0-11.8c1.84 0 3.07.78 3.78 1.46l2.58-2.48C16.7 3.83 14.6 2.9 12 2.9a9.1 9.1 0 1 0 0 18.2c5.25 0 8.73-3.69 8.73-8.89 0-.6-.07-1.05-.15-1.5z"/></svg></a>
+      </div>
+      <a class="otm-credit" href="https://otm-designs.com" target="_blank" rel="noopener">Built by OTM Web Design</a>
+    </div>
+  </div>
+</footer>
+<script src="script.js" defer></script>
+</body>
+</html>
